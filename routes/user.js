@@ -229,22 +229,15 @@ router.post('/getAllData', async (req, res) => {
       { header: 'Punch Out Time', key: 'punchOutTime', width: 30 },
     ];
 
-    const options = {
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true
-    };
-    
-    punchData.forEach(punch => {    
+    // Add rows for each punch entry
+    punchData.forEach(punch => {
       worksheet.addRow({
         name: punch.userId.name,
         phoneNo: punch.userId.phoneNo,
         punchInTime: punch.punchInTime,
-        punchOutTime: punch.punchOutTime,
+        punchOutTime: punch.punchOutTime || 'N/A' // Handle missing punchOutTime
       });
     });
-  
 
     // Save workbook to buffer
     const buffer = await workbook.xlsx.writeBuffer();
@@ -261,7 +254,7 @@ router.post('/getAllData', async (req, res) => {
       from: 'harsha@iglulabs.com',
       to: 'harshasagar1506@gmail.com',
       subject: 'User Punch Data',
-      text: 'Please find attached the user punch data in Excel format. mr GOWRI SHANKAR ',
+      text: 'Please find attached the user punch data in Excel format.',
       attachments: [
         {
           filename: 'user_punch_data.xlsx',
@@ -274,15 +267,15 @@ router.post('/getAllData', async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
-        return res.status(500).json({message: "Error sending Email"});
+        return res.status(500).send({ message: 'Error sending mail' });
       }
       console.log('Email sent: ' + info.response);
-      // res.json({ message: 'Punched out successfully', punchRecord });
-      return res.send(200).json({message: "User punch data email sent successfully."});
+      return res.json({ message: 'User punch data email sent successfully.' });
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    
+    res.status(500).json({ message: 'Server error' });
   }
 });
 module.exports = router;
