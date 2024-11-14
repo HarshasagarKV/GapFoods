@@ -236,31 +236,12 @@ router.post('/getAllData', async (req, res) => {
       hour12: true
     };
     
-    punchData.forEach(punch => {
-      const punchInFormatted = punch.punchInTime
-        ? `${punch.punchInTime.toLocaleDateString('en-CA')} ${punch.punchInTime.toLocaleTimeString('en-US', options)}`
-        : 'N/A';
-      
-      const punchOutFormatted = punch.punchOutTime
-        ? `${punch.punchOutTime.toLocaleDateString('en-CA')} ${punch.punchOutTime.toLocaleTimeString('en-US', options)}`
-        : 'N/A';
-    
-      let timeDifference = 'N/A';
-      if (punch.punchInTime && punch.punchOutTime) {
-        // Calculate time difference in milliseconds
-        const diffMs = punch.punchOutTime - punch.punchInTime;
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-        timeDifference = `${diffHours} hr ${diffMinutes} min`;
-      }
-    
+    punchData.forEach(punch => {    
       worksheet.addRow({
         name: punch.userId.name,
         phoneNo: punch.userId.phoneNo,
-        punchInTime: punchInFormatted,
-        punchOutTime: punchOutFormatted,
-        timeDifference: timeDifference
+        punchInTime: punch.punchInTime,
+        punchOutTime: punch.punchOutTime,
       });
     });
   
@@ -293,14 +274,15 @@ router.post('/getAllData', async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
-        return res.status(500)(200).json({message: "Error sending Email"});
+        return res.status(500).json({message: "Error sending Email"});
       }
       console.log('Email sent: ' + info.response);
-      res.send(200).json({message: "User punch data email sent successfully."});
+      // res.json({ message: 'Punched out successfully', punchRecord });
+      return res.send(200).json({message: "User punch data email sent successfully."});
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 module.exports = router;
