@@ -78,7 +78,7 @@ router.post('/register', async (req, res) => {
 // Login a user
 router.post('/login', async (req, res) => {
     const { phoneNo, password } = req.body;
-
+  console.log("heo")
     // Validate input
     if (!phoneNo || !password) {
       console.log("invalid details")
@@ -187,27 +187,44 @@ router.post('/resetPassword', async (req, res) => {
 // Route to get punch data within a time range and send it via email as an Excel file
 router.post('/getAllData', async (req, res) => {
   try {
+    const { fromDate, toDate } = req.body;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).send("Please provide both from and to dates.");
+    }
+
+    // Convert dates to Date objects
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999); // Ensure the end date includes the whole day
+
+    // Fetch users with punch data within the specified date range
     const users = await User.find();
     if (users.length === 0) return res.status(404).send("No user data found.");
 
+    const punchData = await Punch.find({
+      punchInTime: { $gte: from, $lte: to }
+    }).populate('userId', 'name phoneNo'); // Populate user data
+
     // Step 3: Generate Excel file
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Users');
+    const worksheet = workbook.addWorksheet('User Punch Data');
 
     // Define columns
     worksheet.columns = [
       { header: 'Name', key: 'name', width: 30 },
-      { header: 'Email', key: 'email', width: 30 },
-      { header: 'Phone', key: 'phone', width: 15 },
-      // { header: 'Address', key: 'address', width: 30 },
+      { header: 'Phone', key: 'phoneNo', width: 15 },
+      { header: 'Punch In Time', key: 'punchInTime', width: 30 },
+      { header: 'Punch Out Time', key: 'punchOutTime', width: 30 },
     ];
-     // Add rows
-     users.forEach(user => {
+
+    // Add rows for each punch entry
+    punchData.forEach(punch => {
       worksheet.addRow({
-        name: user.name,
-        // email: user.email,
-        phone: user.phoneNo,
-        // address: user.address,
+        name: punch.userId.name,
+        phoneNo: punch.userId.phoneNo,
+        punchInTime: punch.punchInTime,
+        punchOutTime: punch.punchOutTime || 'N/A' // Handle missing punchOutTime
       });
     });
 
@@ -218,35 +235,35 @@ router.post('/getAllData', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user:'harsha@iglulabs.com',
+        user: 'harsha@iglulabs.com',
         pass: 'pvrr aeaa vyqg kmah'
       },
     });
     const mailOptions = {
       from: 'harsha@iglulabs.com',
-      to: 'harshasagar1506@gmail.com', // Change to your recipient email
-      subject: 'User Data',
-      text: 'Please find attached the user data in Excel format.',
+      to: 'harshasagar1506@gmail.com',
+      subject: 'User Punch Data',
+      text: 'Please find attached the user punch data in Excel format.',
       attachments: [
         {
-          filename: 'user_data.xlsx',
+          filename: 'user_punch_data.xlsx',
           content: buffer,
-          contentType:
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       ],
     };
+
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
         return res.status(500).send("Error sending email.");
       }
       console.log('Email sent: ' + info.response);
-      res.send("User data email sent successfully.");
+      res.send("User punch data email sent successfully.");
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server error' });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 module.exports = router;
