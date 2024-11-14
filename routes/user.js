@@ -8,6 +8,7 @@ const authToken = "gowriGAPFoods"
 const moment = require('moment'); // Moment.js for handling dates
 const ExcelJS = require('exceljs');
 const nodemailer = require('nodemailer');
+const momentt = require('moment-timezone');
 
 // // Middleware for authenticating JWT tokens
 // const authenticateToken = (req, res, next) => {
@@ -121,6 +122,16 @@ router.post('/punch', async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
   
+      const options = { 
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric', 
+        month: 'numeric', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: 'numeric', 
+        second: 'numeric', 
+        hour12: true 
+      };
       // Get today's date in 'YYYY-MM-DD' format
       const today = moment().format('YYYY-MM-DD');
   
@@ -131,14 +142,14 @@ router.post('/punch', async (req, res) => {
         // If no punch-in for today, create a new record
         punchRecord = new Punch({
           userId: user._id,
-          punchInTime: new Date(),
+          punchInTime: new Date().toLocaleString('en-IN', options),
           date: today
         });
         await punchRecord.save();
         return res.json({ message: 'Punched in successfully', punchRecord });
       } else if (!punchRecord.punchOutTime) {
         // If punch-in exists but no punch-out, record punch-out time
-        punchRecord.punchOutTime = new Date();
+        punchRecord.punchOutTime =new Date().toLocaleString('en-IN', options);
         await punchRecord.save();
         return res.json({ message: 'Punched out successfully', punchRecord });
       } else {
@@ -218,21 +229,41 @@ router.post('/getAllData', async (req, res) => {
       { header: 'Punch Out Time', key: 'punchOutTime', width: 30 },
     ];
 
-    const options = { 
-      hour: 'numeric', 
-      minute: 'numeric', 
-      second: 'numeric', 
-      hour12: true 
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true
     };
-    // Add rows for each punch entry
+    
     punchData.forEach(punch => {
+      const punchInFormatted = punch.punchInTime
+        ? `${punch.punchInTime.toLocaleDateString('en-CA')} ${punch.punchInTime.toLocaleTimeString('en-US', options)}`
+        : 'N/A';
+      
+      const punchOutFormatted = punch.punchOutTime
+        ? `${punch.punchOutTime.toLocaleDateString('en-CA')} ${punch.punchOutTime.toLocaleTimeString('en-US', options)}`
+        : 'N/A';
+    
+      let timeDifference = 'N/A';
+      if (punch.punchInTime && punch.punchOutTime) {
+        // Calculate time difference in milliseconds
+        const diffMs = punch.punchOutTime - punch.punchInTime;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+        timeDifference = `${diffHours} hr ${diffMinutes} min`;
+      }
+    
       worksheet.addRow({
         name: punch.userId.name,
         phoneNo: punch.userId.phoneNo,
-        punchInTime: punch.punchInTime ? punch.punchInTime.toLocaleString('en-US', options) : 'N/A',
-        punchOutTime: punch.punchOutTime ? punch.punchOutTime.toLocaleString('en-US', options) : 'N/A'
+        punchInTime: punchInFormatted,
+        punchOutTime: punchOutFormatted,
+        timeDifference: timeDifference
       });
     });
+  
 
     // Save workbook to buffer
     const buffer = await workbook.xlsx.writeBuffer();
@@ -249,7 +280,7 @@ router.post('/getAllData', async (req, res) => {
       from: 'harsha@iglulabs.com',
       to: 'harshasagar1506@gmail.com',
       subject: 'User Punch Data',
-      text: 'Please find attached the user punch data in Excel format.',
+      text: 'Please find attached the user punch data in Excel format. mr GOWRI SHANKAR ',
       attachments: [
         {
           filename: 'user_punch_data.xlsx',
@@ -262,10 +293,10 @@ router.post('/getAllData', async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
-        return res.status(500).send("Error sending email.");
+        return res.status(500)(200).json({message: "Error sending Email"});
       }
       console.log('Email sent: ' + info.response);
-      res.send("User punch data email sent successfully.");
+      res.send(200).json({message: "User punch data email sent successfully."});
     });
   } catch (error) {
     console.error(error);
