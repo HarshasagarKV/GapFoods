@@ -218,13 +218,19 @@ router.post('/getAllData', async (req, res) => {
       { header: 'Punch Out Time', key: 'punchOutTime', width: 30 },
     ];
 
+    const options = { 
+      hour: 'numeric', 
+      minute: 'numeric', 
+      second: 'numeric', 
+      hour12: true 
+    };
     // Add rows for each punch entry
     punchData.forEach(punch => {
       worksheet.addRow({
         name: punch.userId.name,
         phoneNo: punch.userId.phoneNo,
-        punchInTime: punch.punchInTime,
-        punchOutTime: punch.punchOutTime || 'N/A' // Handle missing punchOutTime
+        punchInTime: punch.punchInTime ? punch.punchInTime.toLocaleString('en-US', options) : 'N/A',
+        punchOutTime: punch.punchOutTime ? punch.punchOutTime.toLocaleString('en-US', options) : 'N/A'
       });
     });
 
