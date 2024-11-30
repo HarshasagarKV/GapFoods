@@ -205,17 +205,34 @@ router.post('/getAllData', async (req, res) => {
     }
 
     // Convert dates to Date objects
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
-    to.setHours(23, 59, 59, 999); // Ensure the end date includes the whole day
+    // const from = new Date(fromDate);
+    // const to = new Date(toDate);
+    // to.setHours(23, 59, 59, 999); // Ensure the end date includes the whole day
 
-    // Fetch users with punch data within the specified date range
-    const users = await User.find();
-    if (users.length === 0) return res.status(404).send("No user data found.");
+    // // Fetch users with punch data within the specified date range
+    // const users = await User.find();
+    // if (users.length === 0) return res.status(404).send("No user data found.");
 
-    const punchData = await Punch.find({
-      punchInTime: { $gte: from, $lte: to }
-    }).populate('userId', 'name phoneNo'); // Populate user data
+    // const punchData = await Punch.find({
+    //   punchInTime: { $gte: from, $lte: to }
+    // }).populate('userId', 'name phoneNo'); // Populate user data
+
+
+
+    const from = moment(fromDate, 'YYYY-MM-DD').startOf('day').toDate(); // Start of the day
+    const to = moment(toDate, 'YYYY-MM-DD').endOf('day').toDate(); // End of the day
+
+  // Query the database using the date field
+  const punchData = await Punch.find({
+    punchInTime: {
+      $gte: moment(from).format('DD/MM/YYYY, hh:mm:ss a'),
+      $lte: moment(to).format('DD/MM/YYYY, hh:mm:ss a')
+    }
+  }).populate('userId', 'name phoneNo'); // Populate user details
+  // if (!punchData || punchData.length === 0) {
+  //   return res.status(404).send("No punch data found for the specified range.");
+  // }
+
 
     console.log(JSON.stringify(punchData),'punchDatapunchData')
     // Step 3: Generate Excel file
