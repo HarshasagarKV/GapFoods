@@ -222,6 +222,10 @@ router.post('/getAllData', async (req, res) => {
     const from = moment(fromDate, 'YYYY-MM-DD').startOf('day').toDate();
     const to = moment(toDate, 'YYYY-MM-DD').endOf('day').toDate();
   // Query the database using the date field
+  console.log("from",from)
+  console.log("to",to)
+  const dd = await Punch.find().populate('userId', 'name phoneNo');
+  console.log(dd,'dd')
   const punchData = await Punch.find({
     date: { $gte: from, $lte: to }, // Compare based on the 'date' field
   }).populate('userId', 'name phoneNo'); // Populate user details
