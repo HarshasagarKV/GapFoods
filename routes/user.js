@@ -217,6 +217,7 @@ router.post('/getAllData', async (req, res) => {
       punchInTime: { $gte: from, $lte: to }
     }).populate('userId', 'name phoneNo'); // Populate user data
 
+    console.log(JSON.stringify(punchData),'punchDatapunchData')
     // Step 3: Generate Excel file
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('User Punch Data');
