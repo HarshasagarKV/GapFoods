@@ -222,20 +222,17 @@ router.post('/getAllData', async (req, res) => {
     const from = moment(fromDate, 'YYYY-MM-DD').startOf('day').toDate();
     const to = moment(toDate, 'YYYY-MM-DD').endOf('day').toDate();
   // Query the database using the date field
-  const punches = await Punch.find().populate('userId', 'name phoneNo');
+  const punchData = await Punch.find({
+    date: { $gte: from, $lte: to }, // Compare based on the 'date' field
+  }).populate('userId', 'name phoneNo'); // Populate user details
 
-  // Filter punches by parsing the `punchInTime` string into a comparable Date object
-  const filteredPunches = punches.filter((punch) => {
-    const punchInTime = moment(punch.punchInTime, 'DD/MM/YYYY, hh:mm:ss a').toDate();
-    return punchInTime >= from && punchInTime <= to;
-  });
 
   // if (!punchData || punchData.length === 0) {
   //   return res.status(404).send("No punch data found for the specified range.");
   // }
 
 
-    console.log(JSON.stringify(filteredPunches),'punchDatapunchData')
+    console.log(JSON.stringify(punchData),'punchDatapunchData')
     // Step 3: Generate Excel file
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('User Punch Data');
@@ -249,7 +246,7 @@ router.post('/getAllData', async (req, res) => {
     ];
 
     // Add rows for each punch entry
-    filteredPunches.forEach(punch => {
+    punchData.forEach(punch => {
       worksheet.addRow({
         name: punch.userId.name,
         phoneNo: punch.userId.phoneNo,
