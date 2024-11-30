@@ -8,11 +8,11 @@ const punchSchema = new mongoose.Schema({
     required: true
   },
   punchInTime: {
-    type: String,
+    type: Date,
     required: true
   },
   punchOutTime: {
-    type: String
+    type: Date
   },
   date: {
     type: String, // Storing the date in 'YYYY-MM-DD' format for ease of filtering
