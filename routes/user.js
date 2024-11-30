@@ -219,10 +219,13 @@ router.post('/getAllData', async (req, res) => {
 
 
 
-    const from = moment(fromDate, 'YYYY-MM-DD').startOf('day').toDate().split('T')[0];
-    const to = moment(toDate, 'YYYY-MM-DD').endOf('day').toDate().split('T')[0];
+    let from = moment(fromDate, 'YYYY-MM-DD').startOf('day').toDate();
+    from  = new Date(from).toISOString().split('T')[0];
+    let to = moment(toDate, 'YYYY-MM-DD').endOf('day').toDate();
+    to  = new Date(to).toISOString().split('T')[0];
   // Query the database using the date field
   console.log("from",from)
+
   console.log("to",to)
   const dd = await Punch.find().populate('userId', 'name phoneNo');
   console.log(dd,'dd')
